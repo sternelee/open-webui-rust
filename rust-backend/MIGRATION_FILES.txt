@@ -1,0 +1,252 @@
+Files Requiring Migration
+================================================================================
+
+src/error.rs
+  Issues: actix-web, sqlx
+
+src/main.rs
+  Issues: actix-web, sqlx, actix_files
+
+src/middleware/audit.rs
+  Issues: actix-web
+
+src/middleware/auth.rs
+  Issues: actix-web
+
+src/middleware/code_interpreter.rs
+  Issues: actix-web
+
+src/middleware/rate_limit.rs
+  Issues: actix-web
+
+src/middleware/request_id.rs
+  Issues: actix-web
+
+src/middleware/security_headers.rs
+  Issues: actix-web
+
+src/models/auth.rs
+  Issues: sqlx
+
+src/models/channel.rs
+  Issues: sqlx
+
+src/models/chat.rs
+  Issues: sqlx
+
+src/models/config.rs
+  Issues: sqlx
+
+src/models/feedback.rs
+  Issues: sqlx
+
+src/models/file.rs
+  Issues: sqlx
+
+src/models/folder.rs
+  Issues: sqlx
+
+src/models/function.rs
+  Issues: sqlx
+
+src/models/group.rs
+  Issues: sqlx
+
+src/models/knowledge.rs
+  Issues: sqlx
+
+src/models/memory.rs
+  Issues: sqlx
+
+src/models/message.rs
+  Issues: sqlx
+
+src/models/model.rs
+  Issues: sqlx
+
+src/models/note.rs
+  Issues: sqlx
+
+src/models/oauth_session.rs
+  Issues: sqlx
+
+src/models/prompt.rs
+  Issues: sqlx
+
+src/models/tag.rs
+  Issues: sqlx
+
+src/models/tool.rs
+  Issues: sqlx
+
+src/models/user.rs
+  Issues: sqlx
+
+src/routes/audio.rs
+  Issues: actix-web
+
+src/routes/auth.rs
+  Issues: actix-web, sqlx, postgres_syntax
+
+src/routes/cache.rs
+  Issues: actix-web
+
+src/routes/channels.rs
+  Issues: actix-web
+
+src/routes/chats.rs
+  Issues: actix-web
+
+src/routes/code_execution.rs
+  Issues: actix-web
+
+src/routes/configs.rs
+  Issues: actix-web
+
+src/routes/evaluations.rs
+  Issues: actix-web
+
+src/routes/files.rs
+  Issues: actix-web
+
+src/routes/folders.rs
+  Issues: actix-web
+
+src/routes/functions.rs
+  Issues: actix-web
+
+src/routes/groups.rs
+  Issues: actix-web
+
+src/routes/images.rs
+  Issues: actix-web
+
+src/routes/knowledge.rs
+  Issues: actix-web
+
+src/routes/memories.rs
+  Issues: actix-web
+
+src/routes/mod.rs
+  Issues: actix-web
+
+src/routes/models.rs
+  Issues: actix-web
+
+src/routes/notes.rs
+  Issues: actix-web
+
+src/routes/oauth.rs
+  Issues: actix-web, sqlx, postgres_syntax
+
+src/routes/openai.rs
+  Issues: actix-web
+
+src/routes/pipelines.rs
+  Issues: actix-web
+
+src/routes/prompts.rs
+  Issues: actix-web
+
+src/routes/retrieval.rs
+  Issues: actix-web
+
+src/routes/scim.rs
+  Issues: actix-web
+
+src/routes/socketio_admin.rs
+  Issues: actix-web
+
+src/routes/tasks.rs
+  Issues: actix-web
+
+src/routes/tools.rs
+  Issues: actix-web
+
+src/routes/users.rs
+  Issues: actix-web
+
+src/routes/utils.rs
+  Issues: actix-web
+
+src/services/auth.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/channel.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/chat.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/config.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/feedback.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/file.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/folder.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/function.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/group.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/knowledge.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/memory.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/message.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/model.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/models.rs
+  Issues: sqlx
+
+src/services/note.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/oauth_session.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/pipeline.rs
+  Issues: actix-web
+
+src/services/prompt.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/static_files.rs
+  Issues: actix-web
+
+src/services/tool.rs
+  Issues: sqlx, postgres_syntax
+
+src/services/user.rs
+  Issues: sqlx, postgres_syntax
+
+src/socketio/events.rs
+  Issues: actix-web
+
+src/socketio/transport.rs
+  Issues: actix-web, actix_ws
+
+src/utils/cache.rs
+  Issues: actix-web
+
+src/utils/chat_completion.rs
+  Issues: actix-web
+
+src/utils/chat_middleware.rs
+  Issues: sqlx, postgres_syntax
+
+src/websocket_chat.rs
+  Issues: actix-web, actix_ws
+
