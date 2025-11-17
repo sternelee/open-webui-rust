@@ -264,20 +264,28 @@ async fn get_user_groups_by_id(
     Ok(HttpResponse::Ok().json(Vec::<serde_json::Value>::new()))
 }
 
-// Get user OAuth sessions (admin only)
+// Get user OAuth sessions (admin only or own sessions)
 async fn get_user_oauth_sessions(
-    _state: web::Data<AppState>,
+    state: web::Data<AppState>,
     auth_user: AuthUser,
-    _id: web::Path<String>,
+    id: web::Path<String>,
 ) -> AppResult<HttpResponse> {
-    if auth_user.user.role != "admin" {
+    let target_user_id = id.into_inner();
+
+    // Allow users to view their own sessions, or admin to view any
+    if auth_user.user.id != target_user_id && auth_user.user.role != "admin" {
         return Err(crate::error::AppError::Forbidden(
-            "Admin access required".to_string(),
+            "Access denied".to_string(),
         ));
     }
 
-    // TODO: Implement OAuth sessions retrieval
-    Ok(HttpResponse::Ok().json(json!({})))
+    // Get OAuth sessions for the user
+    let sessions = state
+        .oauth_session_service
+        .get_sessions_response_by_user_id(&target_user_id)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(sessions))
 }
 
 async fn update_user_role(

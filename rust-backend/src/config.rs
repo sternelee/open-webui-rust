@@ -31,6 +31,7 @@ pub struct Config {
     pub default_user_role: String,
     pub show_admin_details: bool,
     pub webui_url: String,
+    pub frontend_base_url: String,
     pub pending_user_overlay_title: Option<String>,
     pub pending_user_overlay_content: Option<String>,
     pub response_watermark: Option<String>,
@@ -248,6 +249,74 @@ pub struct Config {
     // Evaluations
     pub enable_evaluation_arena_models: bool,
     pub evaluation_arena_models: serde_json::Value,
+
+    // OAuth Authentication
+    pub enable_oauth_signup: bool,
+    pub oauth_merge_accounts_by_email: bool,
+    pub enable_oauth_persistent_config: bool,
+
+    // OAuth Providers - Google
+    pub google_client_id: String,
+    pub google_client_secret: String,
+    pub google_oauth_scope: String,
+    pub google_redirect_uri: String,
+
+    // OAuth Providers - Microsoft
+    pub microsoft_client_id: String,
+    pub microsoft_client_secret: String,
+    pub microsoft_client_tenant_id: String,
+    pub microsoft_client_login_base_url: String,
+    pub microsoft_client_picture_url: String,
+    pub microsoft_oauth_scope: String,
+    pub microsoft_redirect_uri: String,
+
+    // OAuth Providers - GitHub
+    pub github_client_id: String,
+    pub github_client_secret: String,
+    pub github_client_scope: String,
+    pub github_client_redirect_uri: String,
+
+    // OAuth Providers - Generic OIDC
+    pub oauth_client_id: String,
+    pub oauth_client_secret: String,
+    pub openid_provider_url: String,
+    pub openid_redirect_uri: String,
+    pub oauth_scopes: String,
+    pub oauth_timeout: Option<u64>,
+    pub oauth_token_endpoint_auth_method: Option<String>,
+    pub oauth_code_challenge_method: Option<String>,
+    pub oauth_provider_name: String,
+
+    // OAuth Providers - Feishu
+    pub feishu_client_id: String,
+    pub feishu_client_secret: String,
+    pub feishu_oauth_scope: String,
+    pub feishu_redirect_uri: String,
+
+    // OAuth Claims
+    pub oauth_sub_claim: Option<String>,
+    pub oauth_username_claim: String,
+    pub oauth_email_claim: String,
+    pub oauth_picture_claim: String,
+    pub oauth_groups_claim: String,
+    pub oauth_roles_claim: String,
+
+    // OAuth Role Management
+    pub enable_oauth_role_management: bool,
+    pub oauth_allowed_roles: Vec<String>,
+    pub oauth_admin_roles: Vec<String>,
+    pub oauth_allowed_domains: Vec<String>,
+    pub oauth_update_picture_on_login: bool,
+
+    // OAuth Group Management
+    pub enable_oauth_group_management: bool,
+    pub enable_oauth_group_creation: bool,
+    pub oauth_blocked_groups: Vec<String>,
+
+    // OAuth Session Security
+    pub oauth_session_token_encryption_key: String,
+    pub oauth_client_info_encryption_key: String,
+    pub enable_oauth_id_token_cookie: bool,
 }
 
 /// Mutable config wrapper for runtime updates
@@ -327,6 +396,9 @@ impl Config {
                 .parse()
                 .unwrap_or(true),
             webui_url: env::var("WEBUI_URL")
+                .unwrap_or_else(|_| "http://localhost:8080".to_string()),
+            frontend_base_url: env::var("FRONTEND_BASE_URL")
+                .or_else(|_| env::var("WEBUI_URL"))
                 .unwrap_or_else(|_| "http://localhost:8080".to_string()),
             pending_user_overlay_title: env::var("PENDING_USER_OVERLAY_TITLE").ok(),
             pending_user_overlay_content: env::var("PENDING_USER_OVERLAY_CONTENT").ok(),
@@ -806,6 +878,138 @@ impl Config {
                 .parse()
                 .unwrap_or(false),
             enable_onedrive_integration: env::var("ENABLE_ONEDRIVE_INTEGRATION")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+
+            // OAuth Authentication
+            enable_oauth_signup: env::var("ENABLE_OAUTH_SIGNUP")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+            oauth_merge_accounts_by_email: env::var("OAUTH_MERGE_ACCOUNTS_BY_EMAIL")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+            enable_oauth_persistent_config: env::var("ENABLE_OAUTH_PERSISTENT_CONFIG")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+
+            // OAuth Providers - Google
+            google_client_id: env::var("GOOGLE_CLIENT_ID").unwrap_or_default(),
+            google_client_secret: env::var("GOOGLE_CLIENT_SECRET").unwrap_or_default(),
+            google_oauth_scope: env::var("GOOGLE_OAUTH_SCOPE")
+                .unwrap_or_else(|_| "openid email profile".to_string()),
+            google_redirect_uri: env::var("GOOGLE_REDIRECT_URI").unwrap_or_default(),
+
+            // OAuth Providers - Microsoft
+            microsoft_client_id: env::var("MICROSOFT_CLIENT_ID").unwrap_or_default(),
+            microsoft_client_secret: env::var("MICROSOFT_CLIENT_SECRET").unwrap_or_default(),
+            microsoft_client_tenant_id: env::var("MICROSOFT_CLIENT_TENANT_ID").unwrap_or_default(),
+            microsoft_client_login_base_url: env::var("MICROSOFT_CLIENT_LOGIN_BASE_URL")
+                .unwrap_or_else(|_| "https://login.microsoftonline.com".to_string()),
+            microsoft_client_picture_url: env::var("MICROSOFT_CLIENT_PICTURE_URL")
+                .unwrap_or_else(|_| "https://graph.microsoft.com/v1.0/me/photo/$value".to_string()),
+            microsoft_oauth_scope: env::var("MICROSOFT_OAUTH_SCOPE")
+                .unwrap_or_else(|_| "openid email profile".to_string()),
+            microsoft_redirect_uri: env::var("MICROSOFT_REDIRECT_URI").unwrap_or_default(),
+
+            // OAuth Providers - GitHub
+            github_client_id: env::var("GITHUB_CLIENT_ID").unwrap_or_default(),
+            github_client_secret: env::var("GITHUB_CLIENT_SECRET").unwrap_or_default(),
+            github_client_scope: env::var("GITHUB_CLIENT_SCOPE")
+                .unwrap_or_else(|_| "user:email".to_string()),
+            github_client_redirect_uri: env::var("GITHUB_CLIENT_REDIRECT_URI").unwrap_or_default(),
+
+            // OAuth Providers - Generic OIDC
+            oauth_client_id: env::var("OAUTH_CLIENT_ID").unwrap_or_default(),
+            oauth_client_secret: env::var("OAUTH_CLIENT_SECRET").unwrap_or_default(),
+            openid_provider_url: env::var("OPENID_PROVIDER_URL").unwrap_or_default(),
+            openid_redirect_uri: env::var("OPENID_REDIRECT_URI").unwrap_or_default(),
+            oauth_scopes: env::var("OAUTH_SCOPES")
+                .unwrap_or_else(|_| "openid email profile".to_string()),
+            oauth_timeout: env::var("OAUTH_TIMEOUT").ok().and_then(|s| s.parse().ok()),
+            oauth_token_endpoint_auth_method: env::var("OAUTH_TOKEN_ENDPOINT_AUTH_METHOD").ok(),
+            oauth_code_challenge_method: env::var("OAUTH_CODE_CHALLENGE_METHOD").ok(),
+            oauth_provider_name: env::var("OAUTH_PROVIDER_NAME")
+                .unwrap_or_else(|_| "SSO".to_string()),
+
+            // OAuth Providers - Feishu
+            feishu_client_id: env::var("FEISHU_CLIENT_ID").unwrap_or_default(),
+            feishu_client_secret: env::var("FEISHU_CLIENT_SECRET").unwrap_or_default(),
+            feishu_oauth_scope: env::var("FEISHU_OAUTH_SCOPE")
+                .unwrap_or_else(|_| "contact:user.base:readonly".to_string()),
+            feishu_redirect_uri: env::var("FEISHU_REDIRECT_URI").unwrap_or_default(),
+
+            // OAuth Claims
+            oauth_sub_claim: env::var("OAUTH_SUB_CLAIM").ok(),
+            oauth_username_claim: env::var("OAUTH_USERNAME_CLAIM")
+                .unwrap_or_else(|_| "name".to_string()),
+            oauth_email_claim: env::var("OAUTH_EMAIL_CLAIM")
+                .unwrap_or_else(|_| "email".to_string()),
+            oauth_picture_claim: env::var("OAUTH_PICTURE_CLAIM")
+                .unwrap_or_else(|_| "picture".to_string()),
+            oauth_groups_claim: env::var("OAUTH_GROUPS_CLAIM")
+                .or_else(|_| env::var("OAUTH_GROUP_CLAIM"))
+                .unwrap_or_else(|_| "groups".to_string()),
+            oauth_roles_claim: env::var("OAUTH_ROLES_CLAIM")
+                .unwrap_or_else(|_| "roles".to_string()),
+
+            // OAuth Role Management
+            enable_oauth_role_management: env::var("ENABLE_OAUTH_ROLE_MANAGEMENT")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+            oauth_allowed_roles: env::var("OAUTH_ALLOWED_ROLES")
+                .unwrap_or_else(|_| "user,admin".to_string())
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+            oauth_admin_roles: env::var("OAUTH_ADMIN_ROLES")
+                .unwrap_or_else(|_| "admin".to_string())
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+            oauth_allowed_domains: env::var("OAUTH_ALLOWED_DOMAINS")
+                .unwrap_or_else(|_| "*".to_string())
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+            oauth_update_picture_on_login: env::var("OAUTH_UPDATE_PICTURE_ON_LOGIN")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+
+            // OAuth Group Management
+            enable_oauth_group_management: env::var("ENABLE_OAUTH_GROUP_MANAGEMENT")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+            enable_oauth_group_creation: env::var("ENABLE_OAUTH_GROUP_CREATION")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
+            oauth_blocked_groups: env::var("OAUTH_BLOCKED_GROUPS")
+                .ok()
+                .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
+                .unwrap_or_default(),
+
+            // OAuth Session Security
+            oauth_session_token_encryption_key: env::var("OAUTH_SESSION_TOKEN_ENCRYPTION_KEY")
+                .unwrap_or_else(|_| {
+                    env::var("WEBUI_SECRET_KEY")
+                        .unwrap_or_else(|_| uuid::Uuid::new_v4().to_string())
+                }),
+            oauth_client_info_encryption_key: env::var("OAUTH_CLIENT_INFO_ENCRYPTION_KEY")
+                .unwrap_or_else(|_| {
+                    env::var("WEBUI_SECRET_KEY")
+                        .unwrap_or_else(|_| uuid::Uuid::new_v4().to_string())
+                }),
+            enable_oauth_id_token_cookie: env::var("ENABLE_OAUTH_ID_TOKEN_COOKIE")
                 .unwrap_or_else(|_| "false".to_string())
                 .parse()
                 .unwrap_or(false),

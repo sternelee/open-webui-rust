@@ -5,6 +5,7 @@ pub mod chat;
 pub mod chat_completion;
 pub mod chat_middleware;
 pub mod embeddings;
+pub mod fernet;
 pub mod misc;
 pub mod password;
 pub mod pipeline;

@@ -16,6 +16,7 @@ pub mod knowledge_vector; // Vector DB operations for knowledge
 pub mod memories;
 pub mod models;
 pub mod notes;
+pub mod oauth;
 pub mod openai;
 pub mod pipelines;
 pub mod prompts;
@@ -46,6 +47,7 @@ pub fn create_routes(cfg: &mut web::ServiceConfig) {
         // Note: /models GET is handled in main.rs, nested routes handle POST/PUT/DELETE
         .service(web::scope("/models").configure(models::create_routes))
         .service(web::scope("/notes").configure(notes::create_routes))
+        .configure(oauth::configure) // OAuth routes (no scope prefix, handled in configure)
         .service(web::scope("/pipelines").configure(pipelines::create_routes))
         .service(web::scope("/prompts").configure(prompts::create_routes))
         .service(web::scope("/retrieval").configure(retrieval::create_routes))

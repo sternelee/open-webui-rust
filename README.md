@@ -386,6 +386,12 @@ The Rust backend maintains **100% API compatibility** with the Python backend fo
 - `POST /api/v1/auths/signout` - User logout
 - `POST /api/v1/auths/api_key` - Generate API key
 
+### OAuth 2.0 / OpenID Connect
+- `GET /oauth/{provider}/login` - Initiate OAuth login (Google, Microsoft, GitHub, OIDC, Feishu)
+- `GET /oauth/{provider}/callback` - OAuth callback handler
+- `GET /oauth/{provider}/login/callback` - Legacy callback endpoint
+- `GET /api/v1/users/{id}/oauth/sessions` - Get user's OAuth sessions
+
 ### Chat Completions
 - `POST /api/chat/completions` - OpenAI-compatible chat
 - `POST /api/v1/chat/completions` - Alternative endpoint
@@ -551,33 +557,4 @@ docker build -t open-webui-rust:latest .
 # Run with docker-compose
 docker-compose up -d
 ```
-
-### Performance Tuning
-
-```toml
-# Cargo.toml - Already optimized
-[profile.release]
-opt-level = 3           # Maximum optimization
-lto = true              # Link-time optimization
-codegen-units = 1       # Single codegen unit
-strip = true            # Strip symbols
-```
-
-### Environment Variables for Production
-
-```bash
-# Use production settings
-ENV=production
-RUST_LOG=warn
-ENABLE_REDIS=true
-
-# Increase connection pools
-DATABASE_POOL_SIZE=20
-REDIS_MAX_CONNECTIONS=30
-
-# Enable compression
-ENABLE_COMPRESSION_MIDDLEWARE=true
-
-# Set appropriate CORS
-CORS_ALLOW_ORIGIN=https://yourdomain.com
 ```

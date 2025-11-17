@@ -355,9 +355,15 @@ docker build -t open-webui-rust .
 docker run -p 8080:8080 --env-file .env open-webui-rust
 ```
 
-## 🔌 API 兼容性
+## API 兼容性
 
 Rust 后端对核心端点保持与 Python 后端 **100% API 兼容性**:
+
+### OAuth 2.0 / OpenID Connect
+- `GET /oauth/{provider}/login` - 发起 OAuth 登录 (Google, Microsoft, GitHub, OIDC, Feishu)
+- `GET /oauth/{provider}/callback` - OAuth 回调处理
+- `GET /oauth/{provider}/login/callback` - 登录回调端点
+- `GET /api/v1/users/{id}/oauth/sessions` - 获取用户 OAuth 会话
 
 ### 认证
 - `POST /api/v1/auths/signup` - 用户注册
@@ -518,34 +524,3 @@ cargo build --release
 # 去除符号 (减小大小)
 strip ./target/release/open-webui-rust
 ```
-
-### 性能调优
-
-```toml
-# Cargo.toml - 已优化
-[profile.release]
-opt-level = 3           # 最大优化
-lto = true              # 链接时优化
-codegen-units = 1       # 单个代码生成单元
-strip = true            # 去除符号
-```
-
-### 生产环境变量
-
-```bash
-# 使用生产设置
-ENV=production
-RUST_LOG=warn
-ENABLE_REDIS=true
-
-# 增加连接池
-DATABASE_POOL_SIZE=20
-REDIS_MAX_CONNECTIONS=30
-
-# 启用压缩
-ENABLE_COMPRESSION_MIDDLEWARE=true
-
-# 设置适当的 CORS
-CORS_ALLOW_ORIGIN=https://yourdomain.com
-```
-

@@ -48,6 +48,10 @@ pub struct AppState {
     pub embedding_provider: Option<Arc<dyn retrieval::EmbeddingProvider>>,
     // Sandbox executor client for secure code execution
     pub sandbox_executor_client: Option<Arc<SandboxExecutorClient>>,
+    // OAuth session service for managing encrypted OAuth tokens
+    pub oauth_session_service: Arc<services::oauth_session::OAuthSessionService>,
+    // OAuth manager for coordinating OAuth providers
+    pub oauth_manager: Arc<services::oauth_manager::OAuthManager>,
 }
 
 #[actix_web::main]
@@ -483,6 +487,57 @@ async fn main() -> anyhow::Result<()> {
         None
     };
 
+    // Initialize OAuth session service with encryption
+    let oauth_session_service = {
+        let encryption_key = &config.oauth_session_token_encryption_key;
+        match services::oauth_session::OAuthSessionService::new(db.clone(), encryption_key) {
+            Ok(service) => {
+                info!("OAuth session service initialized with encryption");
+                Arc::new(service)
+            }
+            Err(e) => {
+                warn!("Failed to initialize OAuth session service: {}", e);
+                warn!("OAuth functionality will not be available");
+                // Create a fallback with a default key (won't work but allows server to start)
+                Arc::new(
+                    services::oauth_session::OAuthSessionService::new(
+                        db.clone(),
+                        &uuid::Uuid::new_v4().to_string(),
+                    )
+                    .expect("Failed to create OAuth session service"),
+                )
+            }
+        }
+    };
+
+    // Initialize OAuth manager
+    let oauth_manager = {
+        match services::oauth_manager::OAuthManager::new(
+            config.clone(),
+            oauth_session_service.clone(),
+        )
+        .await
+        {
+            Ok(manager) => {
+                info!("OAuth manager initialized with providers");
+                Arc::new(manager)
+            }
+            Err(e) => {
+                warn!("Failed to initialize OAuth manager: {}", e);
+                warn!("OAuth authentication will not be available");
+                // Create a fallback (empty manager)
+                Arc::new(
+                    services::oauth_manager::OAuthManager::new(
+                        config.clone(),
+                        oauth_session_service.clone(),
+                    )
+                    .await
+                    .expect("Failed to create OAuth manager"),
+                )
+            }
+        }
+    };
+
     let state = web::Data::new(AppState {
         db: db.clone(),
         config: Arc::new(RwLock::new(config.clone())),
@@ -494,6 +549,8 @@ async fn main() -> anyhow::Result<()> {
         vector_db,
         embedding_provider,
         sandbox_executor_client,
+        oauth_session_service,
+        oauth_manager,
     });
 
     // Start server
