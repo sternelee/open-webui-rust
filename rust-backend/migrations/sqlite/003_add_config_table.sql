@@ -1,0 +1,1 @@
+-- SQLite migration: add_config_table

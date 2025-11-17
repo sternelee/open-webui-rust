@@ -1,0 +1,1 @@
+-- SQLite migration: add_folder_data_column

@@ -1,0 +1,1 @@
+-- SQLite migration: add_group_data_column

@@ -1,0 +1,1 @@
+-- SQLite migration: make_message_chat_id_nullable
