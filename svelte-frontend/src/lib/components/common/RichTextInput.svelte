@@ -686,7 +686,16 @@
 			element: element,
 			extensions: [
 				StarterKit.configure({
-					link: link
+					link: link,
+					// Disable extensions that are replaced by ListKit and CodeBlockLowlight
+					...(richText
+						? {
+								codeBlock: false, // Replaced by CodeBlockLowlight
+								bulletList: false, // Replaced by ListKit
+								orderedList: false, // Replaced by ListKit
+								listItem: false // Replaced by ListKit
+							}
+						: {})
 				}),
 				...(dragHandle ? [ListItemDragHandle] : []),
 				Placeholder.configure({ placeholder: () => _placeholder, showOnlyWhenEditable: false }),
@@ -703,6 +712,7 @@
 								table: { resizable: true }
 							}),
 							ListKit.configure({
+								listKeymap: false, // Disable to prevent duplicate registration
 								taskItem: {
 									nested: true
 								}
