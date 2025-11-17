@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: open-webui-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-open_webui}
@@ -23,7 +23,7 @@ services:
 
   # Redis (optional, for caching and WebSocket management)
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: open-webui-redis
     command: redis-server --appendonly yes
     volumes:
