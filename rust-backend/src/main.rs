@@ -1,6 +1,10 @@
 mod config;
 mod db;
 mod error;
+mod models;
+mod routes;
+mod services;
+mod utils;
 
 use axum::{
     extract::State,
@@ -88,6 +92,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/config", get(get_app_config))
         .route("/api/version", get(get_app_version))
         .route("/api/version/updates", get(get_app_latest_version))
+        // Auth routes
+        .nest("/api/v1/auths", routes::auth::create_routes())
         .with_state(state)
         .layer(
             ServiceBuilder::new()
@@ -104,7 +110,8 @@ async fn main() -> anyhow::Result<()> {
     info!("   ✅ Database: Turso/libSQL (from PostgreSQL)");
     info!("   ✅ Middleware: Tower (from actix)");
     info!("   ✅ Error Handling: IntoResponse");
-    info!("   ⚠️  Service APIs: In progress (83 files remaining)");
+    info!("   ✅ Services: User, Auth migrated");
+    info!("   ✅ Routes: Auth (signin/signup) functional");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
