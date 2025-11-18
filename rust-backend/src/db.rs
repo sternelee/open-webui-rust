@@ -124,6 +124,7 @@ impl Database {
         self.conn.clone()
     }
 
+    /* Commented out - requires models module migration
     // User methods
     pub async fn get_user_by_id(
         &self,
@@ -329,4 +330,5 @@ impl Database {
 
         Ok(models)
     }
+    */
 }

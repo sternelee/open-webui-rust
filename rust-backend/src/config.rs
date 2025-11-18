@@ -638,7 +638,7 @@ impl Config {
                 .or_else(|_| env::var("OPENAI_API_BASE_URL"))
                 .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
             rag_template: env::var("RAG_TEMPLATE")
-                .unwrap_or_else(|_| crate::utils::retrieval::DEFAULT_RAG_TEMPLATE.to_string()),
+                .unwrap_or_else(|_| "Use the following context as your learned knowledge, inside <context></context> XML tags.\n<context>\n{{CONTEXT}}\n</context>\n\nWhen answer to user:\n- If you don't know, just say that you don't know.\n- If you don't know when you are not sure, ask for clarification.\nAvoid mentioning that you obtained the information from the context.\nAnd answer according to the language of the user's question.".to_string()),
             rag_full_context: env::var("RAG_FULL_CONTEXT")
                 .unwrap_or_else(|_| "false".to_string())
                 .parse()
