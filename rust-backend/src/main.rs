@@ -94,6 +94,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/version/updates", get(get_app_latest_version))
         // Auth routes
         .nest("/api/v1/auths", routes::auth::create_routes())
+        // User routes
+        .nest("/api/v1/users", routes::users::create_routes())
+        // Config routes
+        .nest("/api/configs", routes::configs::create_routes())
         .with_state(state)
         .layer(
             ServiceBuilder::new()
@@ -111,7 +115,7 @@ async fn main() -> anyhow::Result<()> {
     info!("   ✅ Middleware: Tower (from actix)");
     info!("   ✅ Error Handling: IntoResponse");
     info!("   ✅ Services: User, Auth migrated");
-    info!("   ✅ Routes: Auth (signin/signup) functional");
+    info!("   ✅ Routes: Auth, Users, Configs functional");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
