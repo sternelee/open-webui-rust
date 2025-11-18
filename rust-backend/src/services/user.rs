@@ -3,7 +3,6 @@ use crate::error::{AppError, AppResult};
 use crate::models::User;
 use crate::utils::time::current_timestamp_seconds;
 use chrono::NaiveDate;
-use sqlx::Row;
 
 pub struct UserService<'a> {
     db: &'a Database,
@@ -15,84 +14,97 @@ impl<'a> UserService<'a> {
     }
 
     pub async fn get_user_by_id(&self, id: &str) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, name, email, username, role, profile_image_url, bio, gender, 
                    date_of_birth, 
-                   COALESCE(info, '{}'::jsonb) as info, 
-                   COALESCE(settings, '{}'::jsonb) as settings, 
+                   COALESCE(info, '{}') as info, 
+                   COALESCE(settings, '{}') as settings, 
                    api_key, oauth_sub, 
                    last_active_at, updated_at, created_at
             FROM "user"
-            WHERE id = $1
+            WHERE id = ?
             "#,
-        )
-        .bind(id)
-        .fetch_optional(&self.db.pool)
-        .await?;
+            [id],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(result)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            Ok(Some(User::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn get_user_by_email(&self, email: &str) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, name, email, username, role, profile_image_url, bio, gender, 
                    date_of_birth, 
-                   COALESCE(info, '{}'::jsonb) as info, 
-                   COALESCE(settings, '{}'::jsonb) as settings, 
+                   COALESCE(info, '{}') as info, 
+                   COALESCE(settings, '{}') as settings, 
                    api_key, oauth_sub, 
                    last_active_at, updated_at, created_at
             FROM "user"
-            WHERE email = $1
+            WHERE email = ?
             "#,
-        )
-        .bind(email)
-        .fetch_optional(&self.db.pool)
-        .await?;
+            [email],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(result)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            Ok(Some(User::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?))
+        } else {
+            Ok(None)
+        }
     }
 
     #[allow(dead_code)]
     pub async fn get_user_by_api_key(&self, api_key: &str) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, name, email, username, role, profile_image_url, bio, gender, 
                    date_of_birth, 
-                   COALESCE(info, '{}'::jsonb) as info, 
-                   COALESCE(settings, '{}'::jsonb) as settings, 
+                   COALESCE(info, '{}') as info, 
+                   COALESCE(settings, '{}') as settings, 
                    api_key, oauth_sub, 
                    last_active_at, updated_at, created_at
             FROM "user"
-            WHERE api_key = $1
+            WHERE api_key = ?
             "#,
-        )
-        .bind(api_key)
-        .fetch_optional(&self.db.pool)
-        .await?;
+            [api_key],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(result)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            Ok(Some(User::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn get_first_user(&self) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, name, email, username, role, profile_image_url, bio, gender, 
                    date_of_birth, 
-                   COALESCE(info, '{}'::jsonb) as info, 
-                   COALESCE(settings, '{}'::jsonb) as settings, 
+                   COALESCE(info, '{}') as info, 
+                   COALESCE(settings, '{}') as settings, 
                    api_key, oauth_sub, 
                    last_active_at, updated_at, created_at
             FROM "user"
             ORDER BY created_at ASC
             LIMIT 1
             "#,
-        )
-        .fetch_optional(&self.db.pool)
-        .await?;
+            (),
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(result)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            Ok(Some(User::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn create_user(
@@ -105,22 +117,16 @@ impl<'a> UserService<'a> {
     ) -> AppResult<User> {
         let now = current_timestamp_seconds();
 
-        sqlx::query(
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             INSERT INTO "user" (id, name, email, role, profile_image_url, last_active_at, updated_at, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             "#,
-        )
-        .bind(id)
-        .bind(name)
-        .bind(email)
-        .bind(role)
-        .bind(profile_image_url)
-        .bind(now)
-        .bind(now)
-        .bind(now)
-        .execute(&self.db.pool)
-        .await?;
+            [id, name, email, role, profile_image_url, &now.to_string(), &now.to_string(), &now.to_string()],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
+
+        drop(conn); // Release lock before calling get_user_by_id
 
         self.get_user_by_id(id)
             .await?
@@ -131,74 +137,80 @@ impl<'a> UserService<'a> {
     pub async fn update_user_last_active(&self, id: &str) -> AppResult<()> {
         let now = current_timestamp_seconds();
 
-        sqlx::query(
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             UPDATE "user"
-            SET last_active_at = $1
-            WHERE id = $2
+            SET last_active_at = ?
+            WHERE id = ?
             "#,
-        )
-        .bind(now)
-        .bind(id)
-        .execute(&self.db.pool)
-        .await?;
+            [&now.to_string(), id],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
 
     pub async fn list_users(&self, skip: i64, limit: i64) -> AppResult<Vec<User>> {
-        let users = sqlx::query_as::<_, User>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, name, email, username, role, profile_image_url, bio, gender, 
                    date_of_birth, 
-                   COALESCE(info, '{}'::jsonb) as info, 
-                   COALESCE(settings, '{}'::jsonb) as settings, 
+                   COALESCE(info, '{}') as info, 
+                   COALESCE(settings, '{}') as settings, 
                    api_key, oauth_sub, 
                    last_active_at, updated_at, created_at
             FROM "user"
             ORDER BY created_at DESC
-            LIMIT $1 OFFSET $2
+            LIMIT ? OFFSET ?
             "#,
-        )
-        .bind(limit)
-        .bind(skip)
-        .fetch_all(&self.db.pool)
-        .await?;
+            [&limit.to_string(), &skip.to_string()],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
+
+        let mut users = Vec::new();
+        while let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            users.push(User::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?);
+        }
 
         Ok(users)
     }
 
     pub async fn count_users(&self) -> AppResult<i64> {
-        let count: i64 = sqlx::query("SELECT COUNT(*) as count FROM \"user\"")
-            .fetch_one(&self.db.pool)
-            .await?
-            .try_get("count")?;
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query("SELECT COUNT(*) as count FROM \"user\"", ())
+            .await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(count)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            let count: i64 = row.get(0).map_err(|e| AppError::Database(e.to_string()))?;
+            Ok(count)
+        } else {
+            Ok(0)
+        }
+    }
+
+    pub async fn get_user_count(&self) -> AppResult<i64> {
+        self.count_users().await
     }
 
     pub async fn update_user_role(&self, id: &str, role: &str) -> AppResult<()> {
-        sqlx::query(
+        let now = current_timestamp_seconds();
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             UPDATE "user"
-            SET role = $1, updated_at = $2
-            WHERE id = $3
+            SET role = ?, updated_at = ?
+            WHERE id = ?
             "#,
-        )
-        .bind(role)
-        .bind(current_timestamp_seconds())
-        .bind(id)
-        .execute(&self.db.pool)
-        .await?;
+            [role, &now.to_string(), id],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
 
     pub async fn delete_user(&self, id: &str) -> AppResult<()> {
-        sqlx::query(r#"DELETE FROM "user" WHERE id = $1"#)
-            .bind(id)
-            .execute(&self.db.pool)
-            .await?;
+        let conn = self.db.pool().lock().await;
+        conn.execute(r#"DELETE FROM "user" WHERE id = ?"#, [id])
+            .await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
@@ -208,18 +220,19 @@ impl<'a> UserService<'a> {
         id: &str,
         settings: &serde_json::Value,
     ) -> AppResult<()> {
-        sqlx::query(
+        let now = current_timestamp_seconds();
+        let settings_str = serde_json::to_string(settings)
+            .map_err(|e| AppError::InternalServerError(e.to_string()))?;
+
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             UPDATE "user"
-            SET settings = $1, updated_at = $2
-            WHERE id = $3
+            SET settings = ?, updated_at = ?
+            WHERE id = ?
             "#,
-        )
-        .bind(settings)
-        .bind(current_timestamp_seconds())
-        .bind(id)
-        .execute(&self.db.pool)
-        .await?;
+            [&settings_str, &now.to_string(), id],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
@@ -238,32 +251,32 @@ impl<'a> UserService<'a> {
 
         // Build dynamic SQL query based on which fields are provided
         let mut query_parts = Vec::new();
-        let mut bind_index = 1;
+        let mut params: Vec<String> = Vec::new();
 
-        if name.is_some() {
-            query_parts.push(format!("name = ${}", bind_index));
-            bind_index += 1;
+        if let Some(n) = name {
+            query_parts.push("name = ?");
+            params.push(n.to_string());
         }
-        if profile_image_url.is_some() {
-            query_parts.push(format!("profile_image_url = ${}", bind_index));
-            bind_index += 1;
+        if let Some(p) = profile_image_url {
+            query_parts.push("profile_image_url = ?");
+            params.push(p.to_string());
         }
-        if bio.is_some() {
-            query_parts.push(format!("bio = ${}", bind_index));
-            bind_index += 1;
+        if let Some(b) = bio {
+            query_parts.push("bio = ?");
+            params.push(b.to_string());
         }
-        if gender.is_some() {
-            query_parts.push(format!("gender = ${}", bind_index));
-            bind_index += 1;
+        if let Some(g) = gender {
+            query_parts.push("gender = ?");
+            params.push(g.to_string());
         }
-        if date_of_birth.is_some() {
-            query_parts.push(format!("date_of_birth = ${}", bind_index));
-            bind_index += 1;
+        if let Some(d) = date_of_birth {
+            query_parts.push("date_of_birth = ?");
+            params.push(d.format("%Y-%m-%d").to_string());
         }
 
         // Always update updated_at
-        query_parts.push(format!("updated_at = ${}", bind_index));
-        bind_index += 1;
+        query_parts.push("updated_at = ?");
+        params.push(now.to_string());
 
         if query_parts.len() == 1 {
             // Only updated_at would be updated, nothing to do
@@ -271,44 +284,17 @@ impl<'a> UserService<'a> {
         }
 
         let query_str = format!(
-            r#"UPDATE "user" SET {} WHERE id = ${}"#,
-            query_parts.join(", "),
-            bind_index
+            r#"UPDATE "user" SET {} WHERE id = ?"#,
+            query_parts.join(", ")
         );
+        params.push(id.to_string());
 
-        let mut query = sqlx::query(&query_str);
-
-        if let Some(n) = name {
-            query = query.bind(n);
-        }
-        if let Some(p) = profile_image_url {
-            query = query.bind(p);
-        }
-        if let Some(b) = bio {
-            query = query.bind(b);
-        }
-        if let Some(g) = gender {
-            query = query.bind(g);
-        }
-        if let Some(d) = date_of_birth {
-            query = query.bind(d);
-        }
-
-        query = query.bind(now);
-        query = query.bind(id);
-
-        query.execute(&self.db.pool).await?;
+        let conn = self.db.pool().lock().await;
+        let params_refs: Vec<&str> = params.iter().map(|s| s.as_str()).collect();
+        conn.execute(&query_str, params_refs.as_slice())
+            .await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
-    }
-
-    pub async fn get_user_count(&self) -> AppResult<i64> {
-        let result = sqlx::query("SELECT COUNT(*) as count FROM \"user\"")
-            .fetch_one(&self.db.pool)
-            .await?;
-
-        let count: i64 = result.try_get("count")?;
-        Ok(count)
     }
 
     pub async fn get_valid_user_ids(&self, user_ids: &[String]) -> AppResult<Vec<String>> {
@@ -316,17 +302,25 @@ impl<'a> UserService<'a> {
             return Ok(vec![]);
         }
 
-        let result: Vec<(String,)> = sqlx::query_as(
-            r#"
-            SELECT id
-            FROM "user"
-            WHERE id = ANY($1)
-            "#,
-        )
-        .bind(user_ids)
-        .fetch_all(&self.db.pool)
-        .await?;
+        // For SQLite, we need to build a query with multiple OR conditions
+        // or use IN clause with dynamic placeholders
+        let placeholders: Vec<String> = (0..user_ids.len()).map(|_| "?".to_string()).collect();
+        let query_str = format!(
+            r#"SELECT id FROM "user" WHERE id IN ({})"#,
+            placeholders.join(", ")
+        );
 
-        Ok(result.into_iter().map(|(id,)| id).collect())
+        let conn = self.db.pool().lock().await;
+        let params_refs: Vec<&str> = user_ids.iter().map(|s| s.as_str()).collect();
+        let mut rows = conn.query(&query_str, params_refs.as_slice())
+            .await.map_err(|e| AppError::Database(e.to_string()))?;
+
+        let mut result = Vec::new();
+        while let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            let id: String = row.get(0).map_err(|e| AppError::Database(e.to_string()))?;
+            result.push(id);
+        }
+
+        Ok(result)
     }
 }
