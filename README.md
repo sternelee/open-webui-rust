@@ -182,117 +182,11 @@ docker compose -f docker-compose.dev.yaml down -v
 - **pgAdmin** (port 5050): PostgreSQL admin UI (optional, use `--profile tools`)
 - **Redis Commander** (port 8082): Redis admin UI (optional, use `--profile tools`)
 
-**Environment variables for docker-compose.dev.yaml:**
-
-Create `.env` file in project root to customize:
-
-```bash
-# PostgreSQL
-POSTGRES_DB=openwebui
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_PORT=5432
-
-# Redis
-REDIS_PORT=6379
-
-# ChromaDB
-CHROMA_PORT=8000
-CHROMA_TELEMETRY=FALSE
-
-# Admin Tools (optional)
-PGADMIN_EMAIL=admin@admin.com
-PGADMIN_PASSWORD=admin
-PGADMIN_PORT=5050
-REDIS_COMMANDER_USER=admin
-REDIS_COMMANDER_PASSWORD=admin
-REDIS_COMMANDER_PORT=8082
-```
-
-**Start admin tools:**
-
-```bash
-docker compose -f docker-compose.dev.yaml --profile tools up -d
-```
-
 ### Rust Backend Environment Variables
 
 Create `.env` file in `rust-backend/` directory:
 
-```bash
-# Server Configuration
-HOST=0.0.0.0
-PORT=8080
-ENV=development
-RUST_LOG=info
-
-# Security (IMPORTANT: Set a fixed key to persist auth tokens across restarts)
-WEBUI_SECRET_KEY=your-secret-key-min-32-chars
-JWT_EXPIRES_IN=168h
-
-# Database (Required) - Match docker-compose.dev.yaml settings
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/openwebui
-DATABASE_POOL_SIZE=10
-DATABASE_POOL_MAX_OVERFLOW=10
-DATABASE_POOL_TIMEOUT=30
-DATABASE_POOL_RECYCLE=3600
-
-# Redis (Recommended) - Match docker-compose.dev.yaml settings
-ENABLE_REDIS=false
-REDIS_URL=redis://localhost:6379
-
-# Authentication
-ENABLE_SIGNUP=true
-ENABLE_LOGIN_FORM=true
-ENABLE_API_KEY=true
-DEFAULT_USER_ROLE=pending
-
-# OpenAI Configuration (if using OpenAI models)
-ENABLE_OPENAI_API=true
-OPENAI_API_KEY=sk-your-key
-OPENAI_API_BASE_URL=https://api.openai.com/v1
-
-# CORS
-CORS_ALLOW_ORIGIN=*
-
-# WebSocket
-ENABLE_WEBSOCKET_SUPPORT=true
-WEBSOCKET_MANAGER=local
-
-# Features
-ENABLE_IMAGE_GENERATION=false
-ENABLE_CODE_EXECUTION=false
-ENABLE_WEB_SEARCH=false
-
-# Audio (Optional)
-TTS_ENGINE=openai
-STT_ENGINE=openai
-
-# RAG/Retrieval (Optional) - ChromaDB integration
-CHUNK_SIZE=1500
-CHUNK_OVERLAP=100
-RAG_TOP_K=5
-
-# Storage
-UPLOAD_DIR=/app/data/uploads
-
-# Logging
-GLOBAL_LOG_LEVEL=INFO
-```
-
-**Important Notes:**
-- **WEBUI_SECRET_KEY**: Must be set to a fixed value (min 32 characters) to prevent JWT token invalidation on server restart. Use `uuidgen` or generate a secure random string.
-- **DATABASE_URL**: Should match the PostgreSQL credentials in `docker-compose.dev.yaml`
-- **REDIS_URL**: Should match the Redis port in `docker-compose.dev.yaml`
-
 See `rust-backend/env.example` for complete configuration options.
-
-### Configuration Precedence
-
-1. Environment variables (highest priority)
-2. `.env` file
-3. Database-stored configuration
-4. Default values (lowest priority)
 
 ## Running the Server
 
@@ -334,93 +228,6 @@ The server will start at `http://0.0.0.0:8080`
 - Rust backend runs natively for faster compilation and debugging
 - JWT tokens persist across backend restarts (with fixed WEBUI_SECRET_KEY)
 - Easy to reset database with `docker compose down -v`
-
-### Production Mode (Optimized)
-
-```bash
-cargo run --release
-```
-
-### Using the Build Script
-
-```bash
-./build.sh          # Builds release binary
-./build.sh --dev    # Builds debug binary
-./build.sh --run    # Builds and runs
-```
-
-### Docker
-
-```bash
-docker build -t open-webui-rust .
-docker run -p 8080:8080 --env-file .env open-webui-rust
-```
-
-### Systemd Service (Linux)
-
-```ini
-[Unit]
-Description=Open WebUI Rust Backend
-After=network.target postgresql.service redis.service
-
-[Service]
-Type=simple
-User=webui
-WorkingDirectory=/opt/open-webui-rust
-EnvironmentFile=/opt/open-webui-rust/.env
-ExecStart=/opt/open-webui-rust/target/release/open-webui-rust
-Restart=on-failure
-RestartSec=5s
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## API Compatibility
-
-The Rust backend maintains **100% API compatibility** with the Python backend for core endpoints:
-
-### Authentication
-- `POST /api/v1/auths/signup` - User registration
-- `POST /api/v1/auths/signin` - User login
-- `POST /api/v1/auths/signout` - User logout
-- `POST /api/v1/auths/api_key` - Generate API key
-
-### OAuth 2.0 / OpenID Connect
-- `GET /oauth/{provider}/login` - Initiate OAuth login (Google, Microsoft, GitHub, OIDC, Feishu)
-- `GET /oauth/{provider}/callback` - OAuth callback handler
-- `GET /oauth/{provider}/login/callback` - Legacy callback endpoint
-- `GET /api/v1/users/{id}/oauth/sessions` - Get user's OAuth sessions
-
-### Chat Completions
-- `POST /api/chat/completions` - OpenAI-compatible chat
-- `POST /api/v1/chat/completions` - Alternative endpoint
-- `POST /openai/v1/chat/completions` - Full OpenAI compatibility
-- `WS /api/ws/chat` - WebSocket streaming
-
-### Models
-- `GET /api/models` - List available models
-- `GET /api/models/base` - List base models
-- `POST /api/v1/models` - Create model
-- `GET /api/v1/models/:id` - Get model details
-
-### Users
-- `GET /api/v1/users` - List users (admin)
-- `GET /api/v1/users/:id` - Get user profile
-- `PUT /api/v1/users/:id` - Update user
-- `DELETE /api/v1/users/:id` - Delete user
-
-### Files & Knowledge
-- `POST /api/v1/files` - Upload file
-- `GET /api/v1/files/:id` - Download file
-- `POST /api/v1/knowledge` - Create knowledge base
-- `GET /api/v1/retrieval/query` - Query knowledge
-
-### Health & Status
-- `GET /health` - Basic health check
-- `GET /health/db` - Database connectivity check
-- `GET /api/config` - Frontend configuration
-- `GET /api/version` - Backend version
 
 ## Performance
 
@@ -472,29 +279,7 @@ cargo clippy -- -D warnings
 
 # Check without building
 cargo check
-
-# View Docker service logs
-docker compose -f docker-compose.dev.yaml logs -f postgres
-docker compose -f docker-compose.dev.yaml logs -f redis
-docker compose -f docker-compose.dev.yaml logs -f chromadb
 ```
-
-### Code Structure Guidelines
-
-1. **Models** (`src/models/`): Database entities with Serde serialization
-2. **Services** (`src/services/`): Business logic, reusable across routes
-3. **Routes** (`src/routes/`): HTTP handlers, thin layer calling services
-4. **Middleware** (`src/middleware/`): Cross-cutting concerns (auth, logging)
-5. **Utils** (`src/utils/`): Helper functions, no business logic
-
-### Adding New Features
-
-1. Add model in `src/models/[feature].rs`
-2. Add database migration in `migrations/postgres/`
-3. Implement service in `src/services/[feature].rs`
-4. Add routes in `src/routes/[feature].rs`
-5. Register routes in `src/routes/mod.rs`
-6. Add tests
 
 ## Testing
 
@@ -512,14 +297,6 @@ export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/openwebui_test
 
 # Run integration tests
 cargo test --test '*'
-```
-
-### Test with Demo Account
-
-```bash
-# The backend includes a demo account
-# Email: test@test.com
-# Password: test1234
 ```
 
 ### Load Testing
@@ -546,15 +323,4 @@ cargo build --release
 
 # Strip symbols (reduces size)
 strip ./target/release/open-webui-rust
-```
-
-### Docker Deployment
-
-```bash
-# Multi-stage Docker build
-docker build -t open-webui-rust:latest .
-
-# Run with docker-compose
-docker-compose up -d
-```
 ```
