@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 use validator::Validate;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Auth {
     pub id: String,
     pub email: String,
@@ -10,6 +9,20 @@ pub struct Auth {
     pub active: bool,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+impl Auth {
+    /// Parse auth from libSQL row
+    pub fn from_row(row: &libsql::Row) -> Result<Self, libsql::Error> {
+        Ok(Auth {
+            id: row.get(0)?,
+            email: row.get(1)?,
+            password: row.get(2)?,
+            active: row.get::<i64>(3)? != 0, // SQLite uses INTEGER for BOOLEAN
+            created_at: row.get(4)?,
+            updated_at: row.get(5)?,
+        })
+    }
 }
 
 #[derive(Debug, Deserialize, Validate)]
