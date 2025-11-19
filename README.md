@@ -51,19 +51,6 @@ The Rust backend is a drop-in replacement for the Python backend, offering:
 | shanwu | ¥50 | 2 | Email Service |
 | xixi | ¥50 | 2 | Email Service |
 
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Server](#running-the-server)
-- [API Compatibility](#api-compatibility)
-- [Performance](#performance)
-- [Development](#development)
-- [Testing](#testing)
-- [Deployment](#deployment)
-
 ## Architecture
 
 ### Technology Stack
