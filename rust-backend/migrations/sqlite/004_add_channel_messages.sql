@@ -1,0 +1,1 @@
+-- SQLite migration: add_channel_messages

@@ -1,0 +1,1 @@
+-- SQLite migration: fix_chat_timestamps

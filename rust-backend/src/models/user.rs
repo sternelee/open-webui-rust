@@ -1,10 +1,9 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use sqlx::types::JsonValue;
-use sqlx::FromRow;
+use serde_json::Value as JsonValue;
 use validator::Validate;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: String,
     pub name: String,
@@ -15,15 +14,40 @@ pub struct User {
     pub bio: Option<String>,
     pub gender: Option<String>,
     pub date_of_birth: Option<NaiveDate>,
-    #[sqlx(json)]
     pub info: Option<JsonValue>,
-    #[sqlx(json)]
     pub settings: Option<JsonValue>,
     pub api_key: Option<String>,
     pub oauth_sub: Option<String>,
     pub last_active_at: i64,
     pub updated_at: i64,
     pub created_at: i64,
+}
+
+impl User {
+    /// Parse user from libSQL row
+    pub fn from_row(row: &libsql::Row) -> Result<Self, libsql::Error> {
+        Ok(User {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            email: row.get(2)?,
+            username: row.get(3)?,
+            role: row.get(4)?,
+            profile_image_url: row.get(5)?,
+            bio: row.get(6)?,
+            gender: row.get(7)?,
+            date_of_birth: row.get::<Option<String>>(8)?
+                .and_then(|s| NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            info: row.get::<Option<String>>(9)?
+                .and_then(|s| serde_json::from_str(&s).ok()),
+            settings: row.get::<Option<String>>(10)?
+                .and_then(|s| serde_json::from_str(&s).ok()),
+            api_key: row.get(11)?,
+            oauth_sub: row.get(12)?,
+            last_active_at: row.get(13)?,
+            updated_at: row.get(14)?,
+            created_at: row.get(15)?,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

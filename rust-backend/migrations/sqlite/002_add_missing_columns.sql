@@ -1,0 +1,2 @@
+-- SQLite migration: Add missing columns
+-- Placeholder migration - will be implemented based on PostgreSQL version

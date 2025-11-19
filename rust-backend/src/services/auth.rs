@@ -17,37 +17,34 @@ impl<'a> AuthService<'a> {
         let password_hash = hash_password(password)?;
         let now = current_timestamp_seconds();
 
-        sqlx::query(
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             INSERT INTO auth (id, email, password, active, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#,
-        )
-        .bind(id)
-        .bind(email)
-        .bind(password_hash)
-        .bind(true)
-        .bind(now)
-        .bind(now)
-        .execute(&self.db.pool)
-        .await?;
+            [id, email, &password_hash, "1", &now.to_string(), &now.to_string()],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
 
     pub async fn get_auth_by_email(&self, email: &str) -> AppResult<Option<Auth>> {
-        let result = sqlx::query_as::<_, Auth>(
+        let conn = self.db.pool().lock().await;
+        let mut rows = conn.query(
             r#"
             SELECT id, email, password, active, created_at, updated_at
             FROM auth
-            WHERE email = $1
+            WHERE email = ?
             "#,
-        )
-        .bind(email)
-        .fetch_optional(&self.db.pool)
-        .await?;
+            [email],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(result)
+        if let Some(row) = rows.next().await.map_err(|e| AppError::Database(e.to_string()))? {
+            Ok(Some(Auth::from_row(&row).map_err(|e| AppError::Database(e.to_string()))?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn authenticate(&self, email: &str, password: &str) -> AppResult<Option<String>> {
@@ -71,29 +68,26 @@ impl<'a> AuthService<'a> {
     #[allow(dead_code)]
     pub async fn update_password(&self, id: &str, new_password: &str) -> AppResult<()> {
         let password_hash = hash_password(new_password)?;
+        let now = current_timestamp_seconds();
 
-        sqlx::query(
+        let conn = self.db.pool().lock().await;
+        conn.execute(
             r#"
             UPDATE auth
-            SET password = $1, updated_at = $2
-            WHERE id = $3
+            SET password = ?, updated_at = ?
+            WHERE id = ?
             "#,
-        )
-        .bind(password_hash)
-        .bind(current_timestamp_seconds())
-        .bind(id)
-        .execute(&self.db.pool)
-        .await?;
+            [&password_hash, &now.to_string(), id],
+        ).await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }
 
     #[allow(dead_code)]
     pub async fn delete_auth(&self, id: &str) -> AppResult<()> {
-        sqlx::query("DELETE FROM auth WHERE id = $1")
-            .bind(id)
-            .execute(&self.db.pool)
-            .await?;
+        let conn = self.db.pool().lock().await;
+        conn.execute("DELETE FROM auth WHERE id = ?", [id])
+            .await.map_err(|e| AppError::Database(e.to_string()))?;
 
         Ok(())
     }

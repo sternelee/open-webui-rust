@@ -1,15 +1,16 @@
-use actix_web::{
-    cookie::{Cookie, SameSite},
-    http::{header, StatusCode},
-    HttpResponse, ResponseError,
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(String),
 
     #[error("Redis error: {0}")]
     Redis(String),
@@ -77,9 +78,9 @@ pub struct ErrorResponse {
     pub detail: String,
 }
 
-impl ResponseError for AppError {
-    fn error_response(&self) -> HttpResponse {
-        let (status, error_message) = match self {
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match &self {
             AppError::Database(ref e) => {
                 tracing::error!("Database error: {:?}", e);
                 (
@@ -143,70 +144,11 @@ impl ResponseError for AppError {
             AppError::TooManyRequests(ref e) => (StatusCode::TOO_MANY_REQUESTS, e.clone()),
         };
 
-        let body = ErrorResponse {
-            detail: error_message,
-        };
+        let body = json!({
+            "detail": error_message
+        });
 
-        // Build response with CORS headers to ensure they're always present
-        // even when errors occur in middleware before CORS middleware processes the response
-        let mut response_builder = HttpResponse::build(status);
-        response_builder
-            .insert_header((header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"))
-            .insert_header((header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"))
-            .insert_header((
-                header::ACCESS_CONTROL_ALLOW_METHODS,
-                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-            ))
-            .insert_header((
-                header::ACCESS_CONTROL_ALLOW_HEADERS,
-                "Content-Type, Authorization, Accept, Cookie",
-            ))
-            .insert_header((header::ACCESS_CONTROL_EXPOSE_HEADERS, "Set-Cookie"));
-
-        // Clear auth cookies on authentication errors (matching Python backend behavior)
-        if matches!(
-            self,
-            AppError::Auth(_)
-                | AppError::Unauthorized(_)
-                | AppError::Jwt(_)
-                | AppError::InvalidCredentials
-        ) {
-            let mut token_cookie = Cookie::new("token", "");
-            token_cookie.set_http_only(true);
-            token_cookie.set_same_site(SameSite::Lax);
-            token_cookie.set_path("/");
-            token_cookie.set_max_age(time::Duration::seconds(-1));
-
-            response_builder.insert_header((header::SET_COOKIE, token_cookie.to_string()));
-        }
-
-        response_builder.json(body)
-    }
-
-    fn status_code(&self) -> StatusCode {
-        match self {
-            AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Redis(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Auth(_) => StatusCode::UNAUTHORIZED,
-            AppError::Validation(_) => StatusCode::BAD_REQUEST,
-            AppError::NotFound(_) => StatusCode::NOT_FOUND,
-            AppError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-            AppError::Forbidden(_) => StatusCode::FORBIDDEN,
-            AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
-            AppError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Jwt(_) => StatusCode::UNAUTHORIZED,
-            AppError::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            AppError::UserAlreadyExists => StatusCode::BAD_REQUEST,
-            AppError::Conflict(_) => StatusCode::CONFLICT,
-            AppError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::NotImplemented(_) => StatusCode::NOT_IMPLEMENTED,
-            AppError::ExternalServiceError(_) => StatusCode::BAD_GATEWAY,
-            AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Http(_) => StatusCode::BAD_GATEWAY,
-            AppError::RedisPool(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Timeout(_) => StatusCode::GATEWAY_TIMEOUT,
-            AppError::TooManyRequests(_) => StatusCode::TOO_MANY_REQUESTS,
-        }
+        (status, Json(body)).into_response()
     }
 }
 
